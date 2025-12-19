@@ -67,5 +67,4 @@ group :test do
   gem "faker"
   gem "simplecov", require: false
   gem "mock_redis"
-  gem 'simplecov-json'
 end
