@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kitchen-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kitchen-worker
+  template:
+    metadata:
+      labels:
+        app: kitchen-worker
+    spec:
+      containers:
+      - name: sidekiq
+        image: soat4/kitchen-service:latest
+        command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+        envFrom:
+        - configMapRef:
+            name: kitchen-service-config
+        - secretRef:
+            name: kitchen-service-secrets

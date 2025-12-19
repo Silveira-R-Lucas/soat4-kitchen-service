@@ -77,20 +77,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Publicar Resumo de Cobertura
-        if: always()
-        run: |
-          COVERAGE=$(jq '.metrics.covered_percent' coverage/coverage.json)
-          echo "### 📊 Cobertura de Código: ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
-          
-          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-            echo "❌ Cobertura abaixo de 80%!" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ Meta de 80% atingida!" >> $GITHUB_STEP_SUMMARY
-          fi
-
-  build-and-deploy-to-ecr:
-    name: Build and Deploy to ECR
+  build-and-deploy-to-k8s:
+    name: Build, Push and Deploy to K8s
     runs-on: ubuntu-latest
     needs: test-and-analyze
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -98,16 +86,11 @@ jobs:
     env:
       ECR_REPOSITORY: soat-challenge/kitchen-service
       AWS_REGION: sa-east-1
-
-    permissions:
-      contents: read
-      id-token: write
+      CLUSTER_NAME: soat-cluster-eks
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -120,14 +103,40 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          IMAGE_TAG=${{ github.sha }}
-          
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
+
+      - name: Deploy to Kubernetes
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Substitui a imagem nos arquivos yaml pela imagem recém buildada
+          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/*.yaml
+          
+          # Aplica todas as configurações e deployments
+          kubectl apply -f k8s/configs.yaml
+          kubectl apply -f k8s/api-deployment.yaml
+          kubectl apply -f k8s/sidekiq-deployment.yaml
+          kubectl apply -f k8s/consumer-deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/ingress.yaml
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/kitchen-api
+          kubectl rollout status deployment/kitchen-worker
+          kubectl rollout status deployment/kitchen-consumer
