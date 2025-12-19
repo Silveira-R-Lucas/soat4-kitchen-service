@@ -41,7 +41,7 @@ services:
   kitchen-consumer:
     image: soat4/kitchen-service
     container_name: kitchen-consumer
-    command: bundle exec rails runner -e development app/workers/start_kitchen_consumer.rb
+    command: bundle exec rails runner "StartKitchenConsumer.run"
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_URL: redis://redis:6379/1
