@@ -4,7 +4,6 @@ gem "redis", "~> 5.0"           # cliente Redis
 gem "sidekiq"                   # worker redis-based
 gem "oj"                        # (opcional) JSON fast
 gem "bootsnap"
-gem "curb"
 gem "dotenv-rails"
 gem "pry"
 gem "bunny"
