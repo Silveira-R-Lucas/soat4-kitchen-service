@@ -10,4 +10,3 @@ class EnqueueOrder
     order
   end
 end
-

@@ -1,6 +1,6 @@
 class RabbitmqConsumer
   require "json"
-  
+
   def initialize(exchange_name, queue_name, handlers = {})
     @channel = RabbitmqConnection.channel
     @exchange = @channel.fanout(exchange_name, durable: true)
@@ -28,9 +28,9 @@ class RabbitmqConsumer
     payload_data = data["payload"]
     handler = @handlers[event]
     repo = RedisOrderRepository.new
-    puts"payload_data: #{payload_data}"
-    puts"payload: #{payload}"
-    if event == "PagamentoAprovado" 
+    puts "payload_data: #{payload_data}"
+    puts "payload: #{payload}"
+    if event == "PagamentoAprovado"
       puts "⌛ Iniciando pedido #{payload_data["pedido_id"]}"
       order = EnqueueOrder.new(repo).execute(pedido_id: payload_data["pedido_id"], items: payload_data["items"] || [])
       puts "pedido id #{order.id}"
