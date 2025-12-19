@@ -2,7 +2,7 @@ class RabbitmqPublisher
   require "json"
 
   def initialize(exchange_name)
-    @channel = Connection.channel
+    @channel = RabbitmqConnection.channel
     @exchange = @channel.fanout(exchange_name, durable: true)
   end
 

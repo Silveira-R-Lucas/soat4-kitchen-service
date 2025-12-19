@@ -1,0 +1,7 @@
+Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/domain/production"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/domain/use_cases"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure/persistence"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure/messaging"))
+Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure/workers"))

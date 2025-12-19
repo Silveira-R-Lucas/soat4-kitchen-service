@@ -1,13 +1,13 @@
 source "https://rubygems.org"
 
-gem 'redis', '~> 5.0'           # cliente Redis
-gem 'sidekiq'                   # worker redis-based
-gem 'oj'                        # (opcional) JSON fast
-gem 'bootsnap'
+gem "redis", "~> 5.0"           # cliente Redis
+gem "sidekiq"                   # worker redis-based
+gem "oj"                        # (opcional) JSON fast
+gem "bootsnap"
 gem "curb"
-gem 'dotenv-rails'
-gem 'pry'
-gem 'bunny'
+gem "dotenv-rails"
+gem "pry"
+gem "bunny"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.2.3"
@@ -63,4 +63,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+  gem "rspec-rails"
+  gem "factory_bot_rails"
+  gem "faker"
+  gem "simplecov", require: false
+  gem "mock_redis"
+  gem 'simplecov-json'
 end

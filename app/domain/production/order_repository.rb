@@ -5,4 +5,3 @@ class OrderRepository
   def update(order); raise NotImplementedError; end
   def list_in_progress; raise NotImplementedError; end
 end
-

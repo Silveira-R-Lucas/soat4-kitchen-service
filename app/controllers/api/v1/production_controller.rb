@@ -28,7 +28,7 @@ module Api
         if order
           render json: order.to_h
         else
-          render json: { error: 'Not found' }, status: :not_found
+          render json: { error: "Not found" }, status: :not_found
         end
       end
 
