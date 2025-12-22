@@ -45,9 +45,6 @@ jobs:
         run: bundle exec brakeman --no-pager
         continue-on-error: true
 
-      - name: Instalar libs do sistema
-        run: sudo apt-get install
-
       - name: Limpar caches e arquivos temporários
         run: |
           rm -rf tmp/cache
@@ -86,7 +83,7 @@ jobs:
     env:
       ECR_REPOSITORY: soat-challenge/kitchen-service
       AWS_REGION: sa-east-1
-      CLUSTER_NAME: soat-cluster-eks
+      CLUSTER_NAME: soat-challenge-cluster
 
     steps:
       - name: Checkout code
@@ -106,39 +103,31 @@ jobs:
       - name: Build, tag, and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-
-      - name: Update Kubeconfig
-        run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
-
-      - name: Deploy to Kubernetes
+      - name: Update Image Tag in Secrets Manager
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: sa-east-1
         run: |
-          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/*.yaml
+          IMAGE_TAG=${{ github.sha }}-${{ github.run_number }}
+          SECRET_NAME="soat/kitchen-service/image_tag"
           
-          kubectl apply -f k8s/configs.yaml
-          kubectl apply -f k8s/api-deployment.yaml
-          kubectl apply -f k8s/sidekiq-deployment.yaml
-          kubectl apply -f k8s/consumer-deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
-
-      - name: Verify Rollout
-        run: |
-          kubectl rollout status deployment/kitchen-api
-          kubectl rollout status deployment/kitchen-worker
-          kubectl rollout status deployment/kitchen-consumer
-
+          echo "Atualizando a tag $IMAGE_TAG no segredo $SECRET_NAME"
+          
+          if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" > /dev/null 2>&1; then
+            aws secretsmanager put-secret-value --secret-id "$SECRET_NAME" --secret-string "$IMAGE_TAG"
+          else
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$IMAGE_TAG" --description "Tag da imagem do kitchen-service"
+          fi
+          
       - name: Sync Master Key to AWS Secrets Manager
         run: |
           SECRET_NAME="soat/kitchen-service/master_key"
@@ -149,5 +138,5 @@ jobs:
             aws secretsmanager put-secret-value --secret-id "$SECRET_NAME" --secret-string "$MASTER_KEY"
           else
             echo "Criando novo segredo para a Master Key..."
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$MASTER_KEY" --description "Master Key do Order Service"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$MASTER_KEY" --description "Master Key do Kitchen Service"
           fi
