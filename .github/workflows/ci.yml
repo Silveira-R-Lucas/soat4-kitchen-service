@@ -127,25 +127,7 @@ jobs:
           else
             aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$IMAGE_TAG" --description "Tag da imagem do kitchen-service"
           fi
-
-      - name: Update Kubeconfig
-        run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
-
-      - name: Deploy to Kubernetes
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }}
-        run: |
-          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/*.yaml
           
-          kubectl apply -f k8s/configs.yaml
-          kubectl apply -f k8s/api-deployment.yaml
-          kubectl apply -f k8s/sidekiq-deployment.yaml
-          kubectl apply -f k8s/consumer-deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
-
       - name: Verify Rollout
         run: |
           kubectl rollout status deployment/kitchen-api
