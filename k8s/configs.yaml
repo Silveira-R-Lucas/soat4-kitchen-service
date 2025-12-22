@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kitchen-service-config
+data:
+  REDIS_URL: "redis://redis-service:6379/1"
+  PORT: "3002"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kitchen-service-secrets
+type: Opaque
+data:
+  RABBITMQ_URL: "YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI="
