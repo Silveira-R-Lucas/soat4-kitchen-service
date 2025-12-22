@@ -128,12 +128,6 @@ jobs:
             aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$IMAGE_TAG" --description "Tag da imagem do kitchen-service"
           fi
           
-      - name: Verify Rollout
-        run: |
-          kubectl rollout status deployment/kitchen-api
-          kubectl rollout status deployment/kitchen-worker
-          kubectl rollout status deployment/kitchen-consumer
-
       - name: Sync Master Key to AWS Secrets Manager
         run: |
           SECRET_NAME="soat/kitchen-service/master_key"
