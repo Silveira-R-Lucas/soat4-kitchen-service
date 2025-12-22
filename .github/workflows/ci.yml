@@ -140,3 +140,16 @@ jobs:
           kubectl rollout status deployment/kitchen-api
           kubectl rollout status deployment/kitchen-worker
           kubectl rollout status deployment/kitchen-consumer
+
+      - name: Sync Master Key to AWS Secrets Manager
+        run: |
+          SECRET_NAME="soat/kitchen-service/master_key"
+          MASTER_KEY=$(cat config/master.key)
+
+          if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" > /dev/null 2>&1; then
+            echo "Atualizando chave existente..."
+            aws secretsmanager put-secret-value --secret-id "$SECRET_NAME" --secret-string "$MASTER_KEY"
+          else
+            echo "Criando novo segredo para a Master Key..."
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$MASTER_KEY" --description "Master Key do Order Service"
+          fi
