@@ -124,10 +124,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Substitui a imagem nos arquivos yaml pela imagem recém buildada
           sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/*.yaml
           
-          # Aplica todas as configurações e deployments
           kubectl apply -f k8s/configs.yaml
           kubectl apply -f k8s/api-deployment.yaml
           kubectl apply -f k8s/sidekiq-deployment.yaml
